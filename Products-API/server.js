@@ -11,8 +11,83 @@ app.listen(HTTP_PORT, () => {
   console.log("Server is running on %PORT%".replace("%PORT%", HTTP_PORT));
 });
 
+// SENDING DATA VIA AN API CALL
 app.post("/api/products", (req, res, next) => {
+  try {
+    var errors = [];
+    if (!req.body) {
+      errors.push("An invalid input");
+    }
+
+    const {
+      productName,
+      description,
+      category,
+      brand,
+      expireDate,
+      manufacturedDate,
+      batchNumber,
+      unitPrice,
+      quantity,
+      createdDate,
+    } = req.body;
+
+    var sql =
+      "INSERT INTO products (productName, description, category, brand, expiredDate, manufacturedDate, batchNumber, unitPrice, quantity, createdDate) VALUES (?,?,?,?,?,?,?,?,?,?)";
+    var params = [
+      productName,
+      description,
+      category,
+      brand,
+      expireDate,
+      manufacturedDate,
+      batchNumber,
+      unitPrice,
+      quantity,
+      createdDate,
+    ];
+
+    db.run(sql, params, function (err, results) {
+      if (err) {
+        res.sendStatus(400).json({ error: err.message });
+        return;
+      } else {
+        res.json({
+          message: "success",
+          data: res.body,
+          id: this.lastID,
+        });
+      }
+    });
+  } catch (E) {
+    res.status(400).send(E);
+  }
+});
+
+// SELECTING DATA FROM THE API CALL
+app.get("/api/products", (req, res, next) => {
+  try {
+    var sql = "select * from products";
+    var params = [];
+    db.all(sql, params, (err, rows) => {
+      if (err) {
+        res.status(400).json({ error: err.message });
+        return;
+      }
+      res.json({
+        message: "success",
+        data: rows,
+      });
+    });
+  } catch (E) {
+    res.status(400).send(E);
+  }
+});
+
+// UPDATING EXISTING DATA IN A TABLE
+app.put("/api/products", (req, res, next) => {
   const {
+    id,
     productName,
     description,
     category,
@@ -25,6 +100,45 @@ app.post("/api/products", (req, res, next) => {
     createdDate,
   } = req.body;
 
-  var sql =
-    "INSERT INTO products (productName, description, category, brand, expiredDate, manufacturedDate, batchNumber, unitPrice, quantity, createdDate) VALUES (?,?,?,?,?,?,?,?,?,?)";
+  db.run(
+    `UPDATE products set productName = ?, description = ?, category = ?, brand = ?, expireDate = ?, manufacturedDate = ?, batchNumber = ?, unitPrice = ?, quantity = ?, createdDate = ? WHERE id = ?`,
+    [
+      productName,
+      description,
+      category,
+      brand,
+      expireDate,
+      manufacturedDate,
+      batchNumber,
+      unitPrice,
+      quantity,
+      createdDate,
+    ],
+    function (err, result) {
+      if (err) {
+        res.status(400).json({ error: res.message });
+        return;
+      }
+      res.status(200).json({ updated: this.changes });
+    },
+  );
+});
+
+// DELETING DATA VIA AN API CALL
+app.delete("/api/products/delete/:id", (req, res, next) => {
+  try {
+    db.run(
+      "DELETE FROM products WHERE id = ?",
+      req.params.id,
+      function (err, result) {
+        if (err) {
+          res.status(400).json({ error: res.message });
+          return;
+        }
+        res.json({ message: "deleted", rows: this.changes });
+      },
+    );
+  } catch (E) {
+    res.status(400).send(E);
+  }
 });
