@@ -9,4 +9,6 @@ const server = http.createServer((req, res) => {
   res.end("Test Application");
 });
 
-server.listen(port, hostname, () => {});
+server.listen(port, hostname, () => {
+  console.log(`Server runs at http://${hostname}:${port}/`);
+});
